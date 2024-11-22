@@ -8,6 +8,7 @@ import com.dining.review.api.model.RestaurantDetailsResponse;
 import com.dining.review.api.model.Review;
 import com.dining.review.api.model.User;
 
+import com.dining.review.api.model.User.UserType;
 import com.dining.review.api.repository.RestaurantRepository;
 import com.dining.review.api.repository.ReviewRepository;
 import com.dining.review.api.repository.UserRepository;
@@ -15,6 +16,7 @@ import com.dining.review.api.repository.UserRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+
 
 @RestController
 @RequestMapping("/api")
@@ -46,33 +48,38 @@ public class DinningReviewController {
         return this.userRepository.save(user);
     }
 
-    @PutMapping("/user/{name}")
-    public User updateUser(@PathVariable("name") String name, @RequestBody User user) {
-        Optional<User> userToUpdateOptional = this.userRepository.findByName(name);
 
+    @PutMapping("/user/{name}")
+    public User updateUserDetails(@PathVariable("name") String name,
+                                  @RequestBody User user) {
+        Optional<User> userToUpdateOptional = this.userRepository.findByName(name);
         if (userToUpdateOptional.isEmpty()) {
-            return null;
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
         }
 
         User userToUpdate = userToUpdateOptional.get();
-        if (user.getCity() != null) {
-            userToUpdate.setCity(user.getCity());
-        }
-        if (user.getCity() != null) {
-            userToUpdate.setCity(user.getCity());
-        }
-        if (user.getCountry() != null) {
-            userToUpdate.setCountry(user.getCountry());
-        }
-        if (user.getZipCode() != null) {
-            userToUpdate.setZipCode(user.getZipCode());
-        }
-        userToUpdate.setEggAllergies(user.getEggAllergies());
-        userToUpdate.setPeanutAllergies(user.getPeanutAllergies());
-        userToUpdate.setDairyAllergies(user.getDairyAllergies());
+        if (user.getCity() != null) userToUpdate.setCity(user.getCity());
+        if (user.getCountry() != null) userToUpdate.setCountry(user.getCountry());
+        if (user.getZipCode() != null) userToUpdate.setZipCode(user.getZipCode());
+        if (user.getEggAllergies() != null) userToUpdate.setEggAllergies(user.getEggAllergies());
+        if (user.getPeanutAllergies() != null) userToUpdate.setPeanutAllergies(user.getPeanutAllergies());
+        if (user.getDairyAllergies() != null) userToUpdate.setDairyAllergies(user.getDairyAllergies());
         return this.userRepository.save(userToUpdate);
-
     }
+
+    @PatchMapping("/user/{name}/type")
+    public User updateUserType(@PathVariable("name") String name,
+                               @RequestParam("userType") UserType userType) {
+        Optional<User> userToUpdateOptional = this.userRepository.findByName(name);
+        if (userToUpdateOptional.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found");
+        }
+
+        User userToUpdate = userToUpdateOptional.get();
+        userToUpdate.setTypeUser(userType);
+        return this.userRepository.save(userToUpdate);
+    }
+
 
     // method related to Review model
     @PostMapping("/review")
@@ -83,13 +90,18 @@ public class DinningReviewController {
     }
 
     @GetMapping("/review")
-    public List<Review> getAllReview() {
-        return (List<Review>) this.reviewRepository.findAll();
-    }
-
-    @GetMapping("/review/search")
-    public List<Review> getReviewPending(@RequestParam(name="status", required=false) Review.StatusReview status) {
-        return this.reviewRepository.findByStatus(status);
+    public List<Review> getAllReview(@RequestParam(value = "userName", required = false) String userName) {
+        Optional<User> userOptional = this.userRepository.findByName(userName);
+        if (userOptional.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "This user doesn't exist !");
+        }
+        User user = userOptional.get();
+        UserType userType = user.getTypeUser();
+        if (userType != UserType.ADMIN) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allow to access this information !");
+        } else {
+            return (List<Review>) this.reviewRepository.findAll();
+        }
     }
 
     @PutMapping("/review/{id}")
@@ -105,15 +117,51 @@ public class DinningReviewController {
     }
 
     @GetMapping("/review/search")
-    public List<Review> getReviewRestaurantApproved(@PathVariable("restaurantName") String restaurantName) {
-        Optional<Restaurant> restaurantOptional = this.restaurantRepository.findByName(restaurantName);
-        if (restaurantOptional.isEmpty()) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "This restaurant doesn't exist !");
+    public List<Review> getReviewRestaurant(@RequestParam(value = "userName", required = false) String userName,
+                                            @RequestParam(value = "restaurantName", required = false) String restaurantName,
+                                            @RequestParam(value = "status", required = false) Review.StatusReview status) {
+
+        // request on the status with or without restaurant's name specification
+        if (userName != null && status != null) {
+            Optional<User> userOptional = this.userRepository.findByName(userName);
+            if (userOptional.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "This user doesn't exist !");
+            }
+            User user = userOptional.get();
+            UserType userType = user.getTypeUser();
+            if ((status == Review.StatusReview.PENDING || status == Review.StatusReview.REJECTED)) {
+                if (userType != UserType.ADMIN) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You are not allow to access this information !");
+                } else {
+                    if (restaurantName != null) {
+                        Optional<Restaurant> restaurantOptional = this.restaurantRepository.findByName(restaurantName);
+                        if (restaurantOptional.isEmpty()) {
+                            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "This restaurant doesn't exist !");
+                        }
+                        Restaurant restaurant = restaurantOptional.get();
+                        Long restaurantId = restaurant.getId();
+                        return this.reviewRepository.findByIdRestaurantAndStatus(restaurantId, status);
+                    } else {
+                        return this.reviewRepository.findByStatus(status);
+                    }
+                }
+            } else {
+                return this.reviewRepository.findByStatus(status);
+            }
         }
 
-        Restaurant restaurant = restaurantOptional.get();
-        Long restaurantId = restaurant.getId();
-        return this.reviewRepository.findByIdRestaurantAndStatus(restaurantId, Review.StatusReview.APPROVED);
+        // request on the restaurant's name
+        if (restaurantName != null) {
+            Optional<Restaurant> restaurantOptional = this.restaurantRepository.findByName(restaurantName);
+            if (restaurantOptional.isEmpty()) {
+                throw new ResponseStatusException(HttpStatus.NOT_FOUND, "This restaurant doesn't exist !");
+            }
+            Restaurant restaurant = restaurantOptional.get();
+            Long restaurantId = restaurant.getId();
+            return this.reviewRepository.findByIdRestaurantAndStatus(restaurantId, Review.StatusReview.APPROVED);
+        } else {
+            return null;
+        }
     }
 
     // method related to Restaurant model
@@ -195,7 +243,7 @@ public class DinningReviewController {
             peanutScore += review.getPeanutScore();
             eggScore += review.getEggScore();
             dairyScore += review.getDairyScore();
-            commentary.append(review.getCommentary());
+            commentary.append(" ").append(review.getCommentary());
         }
         String averagePeanutScore = String.format("%.2f", peanutScore / numberReview) + "/5";
         String averageEggScore = String.format("%.2f", eggScore / numberReview) + "/5";
@@ -204,19 +252,4 @@ public class DinningReviewController {
         return new RestaurantDetailsResponse(name, zipCode, city, country, type, averagePeanutScore, averageEggScore, averageDairyScore, commentary.toString());
     }
 
-//    @GetMapping("/restaurant/search")
-//    public List<Restaurant> getAllByZipCodeAndAllergies(@RequestParam(name="zipCode", required = true) Integer zipCode,
-//                                                       @RequestParam(name="peanutAllergies", required = false) boolean peanutAllergies,
-//                                                       @RequestParam(name="eggAllergies", required = false) boolean eggAllergies,
-//                                                       @RequestParam(name="dairyAllergies", required = false) boolean dairyAllergies) {
-//        if (peanutAllergies) {
-//            return this.restaurantRepository.findByZipCodeAndPeanutAllergiesTrue(zipCode);
-//        } else if (eggAllergies) {
-//            return this.restaurantRepository.findByZipCodeAndEggAllergiesTrue(zipCode);
-//        } else if (dairyAllergies) {
-//            return this.restaurantRepository.findByZipCodeAndDairyAllergiesTrue(zipCode);
-//        } else {
-//            return null;
-//        }
-//    }
 }

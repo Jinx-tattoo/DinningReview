@@ -7,9 +7,9 @@ public class Builder {  // Should be static nested class named Builder
     private String city;
     private String country;
     private Integer zipCode;
-    private boolean peanutAllergies;
-    private boolean eggAllergies;
-    private boolean dairyAllergies;
+    private Boolean peanutAllergies;
+    private Boolean eggAllergies;
+    private Boolean dairyAllergies;
 
     public Builder() {} // Add a constructor
 
@@ -38,17 +38,17 @@ public class Builder {  // Should be static nested class named Builder
         return this;
     }
 
-    public Builder peanutAllergies(boolean peanutAllergies) {
+    public Builder peanutAllergies(Boolean peanutAllergies) {
         this.peanutAllergies = peanutAllergies;
         return this;
     }
 
-    public Builder eggAllergies(boolean eggAllergies) {
+    public Builder eggAllergies(Boolean eggAllergies) {
         this.eggAllergies = eggAllergies;
         return this;
     }
 
-    public Builder dairyAllergies(boolean dairyAllergies) {
+    public Builder dairyAllergies(Boolean dairyAllergies) {
         this.dairyAllergies = dairyAllergies;
         return this;
     }
