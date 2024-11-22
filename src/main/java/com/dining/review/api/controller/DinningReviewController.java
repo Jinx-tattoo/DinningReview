@@ -75,7 +75,7 @@ public class DinningReviewController {
     }
 
     // method related to Review model
-    @PostMapping("/restaurant/review")
+    @PostMapping("/review")
     public Review createReview(@RequestBody Review review) {
         if (review.getIdRestaurant() != null) {
             return this.reviewRepository.save(review);
@@ -92,7 +92,7 @@ public class DinningReviewController {
         return this.reviewRepository.findByStatus(status);
     }
 
-    @PutMapping("/restaurant/review/{id}")
+    @PutMapping("/review/{id}")
     public Review modifyStatusReview(@PathVariable("id") Long id, @RequestBody Review.StatusReview decision) {
         Optional<Review> assessReviewOptional = this.reviewRepository.findById(id);
         if (assessReviewOptional.isEmpty()) {
@@ -104,7 +104,7 @@ public class DinningReviewController {
         return this.reviewRepository.save(assessReview);
     }
 
-    @GetMapping("/{restaurantName}/review/search")
+    @GetMapping("/review/search")
     public List<Review> getReviewRestaurantApproved(@PathVariable("restaurantName") String restaurantName) {
         Optional<Restaurant> restaurantOptional = this.restaurantRepository.findByName(restaurantName);
         if (restaurantOptional.isEmpty()) {
