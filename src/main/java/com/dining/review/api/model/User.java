@@ -36,17 +36,17 @@ public class User {
     private @Getter @Setter Integer zipCode;
 
     @Column(name="Peanut_Allergies")
-    private @Setter boolean peanutAllergies;
+    private @Setter Boolean peanutAllergies;
 
     @Column(name="Egg_Allergies")
-    private @Setter boolean eggAllergies;
+    private @Setter Boolean eggAllergies;
 
     @Column(name="Dairy_Allergies")
-    private @Setter boolean dairyAllergies;
+    private @Setter Boolean dairyAllergies;
 
     public User(String name, UserType typeUser, String city, String country,
-                Integer zipCode, boolean peanutAllergies, boolean eggAllergies,
-                boolean dairyAllergies) {
+                Integer zipCode, Boolean peanutAllergies, Boolean eggAllergies,
+                Boolean dairyAllergies) {
         this.name = name;
         this.typeUser = typeUser;
         this.city = city;
@@ -65,15 +65,15 @@ public class User {
         return new Builder();
     }
 
-    public boolean getPeanutAllergies() {
+    public Boolean getPeanutAllergies() {
         return this.peanutAllergies;
     }
 
-    public boolean getEggAllergies() {
+    public Boolean getEggAllergies() {
         return this.eggAllergies;
     }
 
-    public boolean getDairyAllergies() {
+    public Boolean getDairyAllergies() {
         return this.dairyAllergies;
     }
 }

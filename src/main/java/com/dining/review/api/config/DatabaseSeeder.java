@@ -25,7 +25,7 @@ public class DatabaseSeeder implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
         // Prepopulate users
-        userRepository.save(new User("Ange", User.UserType.USER, "Marseille", "France", 13009, false, false, false));
+        userRepository.save(new User("Lucas", User.UserType.USER, "Marseille", "France", 13011, false, false, false));
         userRepository.save(new User("Emma", User.UserType.USER, "Paris", "France", 75001, true, false, true));
         userRepository.save(User.builder()
                 .name("Jack")
